@@ -1,5 +1,5 @@
 # Tyrell
-.NET Core 2.0 bot for Discourse API using ElasticSearch.
+.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities.
 
 ## SETUP:
 
@@ -95,3 +95,6 @@ It runs every minute.
 ## WISHLIST:
 - Auto start into automatic mode
 - Better datetime parsing
+
+## GET CREATIVE:
+Kibana (and/or many other) data visulisation tools are great fun once you have a dataset indexed of forum posts and threads.
