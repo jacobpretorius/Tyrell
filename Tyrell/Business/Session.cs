@@ -12,6 +12,7 @@ namespace Tyrell.Business
 {
     public static class Session
     {
+        private static readonly HttpClient _client = new HttpClient();
         private static readonly string[] _csrfPath = { "csrf" };
 
         private static string _cookie = "";
@@ -48,7 +49,7 @@ namespace Tyrell.Business
                         var trimForumCookie = forumSessionCookie.Substring(0, forumSessionCookie.IndexOf("path=/") - 2);
 
                         //and set it
-                        _cookie = tCookie.Substring(0, tCookie.IndexOf(';') + 1) + " " +trimForumCookie;
+                        _cookie = tCookie.Substring(0, tCookie.IndexOf(';') + 1) + " " + trimForumCookie;
                     }
                 }
             }
@@ -58,36 +59,25 @@ namespace Tyrell.Business
                 Thread.Sleep(2000);
             }
         }
-        
+
         //get the csrf token, also generates a new one if current one is expired
         public static async Task<string> GetCsrfToken()
         {
             if (DateTime.Now >= _tokenValidTo)
             {
                 //get the token (valid for ~15 mins)
-                try
-                {
-                    var csrfSource = new Uri($"{Constants.ForumBaseUrl}/session/csrf.json");
-                    using (HttpClient client = new HttpClient())
-                    {
-                        var csrfResult = await client.GetAsync(csrfSource);
-                        var csrfToken = (string) await Deserialize(csrfResult, _csrfPath);
+                var csrfSource = new Uri($"{Constants.ForumBaseUrl}/session/csrf.json");
+                var csrfResult = await _client.GetAsync(csrfSource);
+                var csrfToken = (string)await Deserialize(csrfResult, _csrfPath);
 
-                        //and get a new cookie if not set
-                        if (string.IsNullOrWhiteSpace(_cookie))
-                        {
-                            _cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
-                        }
-
-                        _tokenValidTo = DateTime.Now.AddMinutes(5);
-                        _token = csrfToken;
-                    }
-                }
-                catch (Exception ex)
+                //and get a new cookie if not set
+                if (string.IsNullOrWhiteSpace(_cookie))
                 {
-                    Console.WriteLine(ex);
-                    Thread.Sleep(2000);
+                    _cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
                 }
+
+                _tokenValidTo = DateTime.Now.AddMinutes(5);
+                _token = csrfToken;
             }
 
             return _token;
