@@ -43,6 +43,8 @@ The main reason I made it, every forum/site needs this functionality IMO. The im
 
 >remindme [dd/mm/yyyy]
 
+>remindme [some-time-function] [to/that] (something you want to be reminded of)
+
 
 Reminders for tonight are at 6pm ONLY, tomorrow are at 7:30am ONLY, use the more advanced options to define more exact times. The rest are based on when you post the request. The (s) are completely optional. Usage of (at) and (in) is also optional.
 
@@ -61,6 +63,10 @@ remindme in 1 week 1:10pm -> reminder one week from today at 1:10pm.
 remindme in 2 days at 4am -> reminder 4am 2 days from today.
 
 remindme 15/01/2019 -> reminder on that date at 7:30am. You can’t give it a time YET.
+
+remindme in 2 days at 9:30am to buy milk -> buy milk in 2 days at 9:30am.
+
+remindme in 4 hours that I like coffee -> you guessed it.
 
 You don’t need to @Tyrell the bot for remindme to work, it will get it from anywhere in a post.
 
@@ -91,9 +97,9 @@ It runs every minute.
 
 ## KNOWN BUGS: 
 - there is an issue with multiple commands in the same post.
+- need to smooth out the pause automatic mode using CAPS handling.
 
 ## WISHLIST:
-- Auto start into automatic mode
 - Better datetime parsing
 
 ## GET CREATIVE:
