@@ -21,6 +21,8 @@ namespace Tyrell
 
             await Login();
 
+            await Functions.AutomaticMode();
+
             ConsoleKeyInfo keyDown;
             do
             {
@@ -65,7 +67,7 @@ namespace Tyrell
                         break;
 
                     case "7":
-                        await Functions.CheckForRemindMePosts();
+                        await Functions.CheckForRemindMePosts(7);
                         break;
 
                     case "8":

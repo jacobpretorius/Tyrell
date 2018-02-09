@@ -19,7 +19,7 @@ namespace Tyrell.DisplayConsole
             WriteOnBottomLine("[4]\tCRAWL FROM X TO X POSTS");
             WriteOnBottomLine("[5]\tCRAWL ALL POSTS");
             WriteOnBottomLine("[6]\tCRAWL ALL THREADS");
-            WriteOnBottomLine("[7]\tPROCESS !REMINDME");
+            WriteOnBottomLine("[7]\tBACK PROCESS REMINDME");
             WriteOnBottomLine("[8]\tPOST TO THREAD");
             WriteOnBottomLine("[9]\tAUTOMATIC MODE");
             WriteOnBottomLine("");

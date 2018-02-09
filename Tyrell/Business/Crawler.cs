@@ -15,9 +15,12 @@ namespace Tyrell.Business
         private static int _highestActualTopicId { get; set; }
         private static int _highestActualPostId { get; set; }
         private static int _highestKnownPostId { get; set; }
+        private static DateTime _lastExtraRangeScan { get; set; }
 
         static Crawler()
         {
+            _lastExtraRangeScan = DateTime.Now.ToLocalTime().AddDays(-1);
+
             var settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticPostIndex);
 
@@ -231,6 +234,13 @@ namespace Tyrell.Business
         //new smart indexer with optional extra rescan range
         public static async Task ReadLatestForumPostsSmart(int rescanRange = 5)
         {
+            // if it's 1AM, do a 1k posts rescan for completeness
+            if (DateTime.Now.Hour == 1 && _lastExtraRangeScan.Date < DateTime.Today)
+            {
+                rescanRange = 1000;
+                _lastExtraRangeScan = DateTime.Now.ToLocalTime();
+            }
+
             //get the latest threads, index them, and set highest ACTUAL thread ID
             await GetLatestForumPostsAndSetNewestThreadId();
 

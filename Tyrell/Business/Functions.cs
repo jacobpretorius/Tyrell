@@ -14,9 +14,9 @@ namespace Tyrell.Business
 {
     public static class Functions
     {
-        private static readonly ElasticClient _elasticSearch;
-        private static readonly ElasticClient _elasticSearchReminders;
-        private static DateTime _reminderLastRan;
+        static readonly ElasticClient _elasticSearch;
+        static readonly ElasticClient _elasticSearchReminders;
+        static DateTime _reminderLastRan;
 
         static Functions()
         {
@@ -36,8 +36,15 @@ namespace Tyrell.Business
         //the real meat of the bot
         public static async Task AutomaticMode()
         {
-            while (true)
+            var go = true;
+            while (go)
             {
+                //keep automatic mode going untill CAPS ON
+                if (Console.CapsLock){
+                    go = false;
+                    Display.FlickerPrint("[AUTOMATIC MODE] STOPPED ON CAPS");
+                }
+
                 //used to offset the time that we index for when we check for reminders
                 var exactStart = DateTime.Now;
 
@@ -56,14 +63,14 @@ namespace Tyrell.Business
 
                 Display.FlickerPrint("[AUTOMATIC MODE] ALL OK");
                 Console.Clear();
-                Display.WriteOnBottomLine($"[AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {_reminderLastRan.ToString("t")}");
+                Display.WriteOnBottomLine($"[ESC] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {_reminderLastRan.ToString("t")}");
                 Thread.Sleep(60000);
-            }
+            };
         }
 
         //check the posts index for remindme messages and add them to the remindme index for processing later
         //decided to keep this seperate from other functions for new user simplicity. Everyone knows remindme, not everyone wants to use advanced tyrell verb commands
-        public static async Task CheckForRemindMePosts()
+        public static async Task CheckForRemindMePosts(int range = 1)
         {
             var esResponse = _elasticSearch.Search<ForumPost>(s => s
                 .Query(q => q
@@ -76,7 +83,7 @@ namespace Tyrell.Business
                                    && m
                                        .DateRange(r => r
                                            .Field(fieldRange => fieldRange.CreatedAt)
-                                           .GreaterThanOrEquals(DateTime.Now.AddDays(-1))
+                                                  .GreaterThanOrEquals(DateTime.Now.AddDays((range  * -1)))
                                        )
                         )
                     )
@@ -89,11 +96,48 @@ namespace Tyrell.Business
                 {
                     try
                     {
-                        var fullMessage = reminderPost.PostRaw.Trim().ToLower();
+                        var fullMessage = RemoveQuotedText(reminderPost.PostRaw.Trim().ToLower());
 
                         //ignore flag: tyrellignore
-                        if (!string.IsNullOrWhiteSpace(fullMessage) && fullMessage.Contains(Constants.BotIgnoreFlag)){
+                        if (!string.IsNullOrWhiteSpace(fullMessage) && fullMessage.Contains(Constants.BotIgnoreFlag))
+                        {
                             continue;
+                        }
+
+                        var reminderMessage = "";
+                        var commandLine = fullMessage.Substring(fullMessage.IndexOf("remindme"));
+
+                        //message reminder text TO or THAT
+                        if (commandLine.Contains(" to ") || commandLine.Contains(" that "))
+                        {
+                            //used to order of TO of THAT is the first command in the list, and set the message accordingly
+                            var commands = commandLine.Split(" ");
+                            foreach (var command in commands)
+                            {
+                                if (command == "to" || command == "that")
+                                {
+                                    if (command == "to")
+                                    {
+                                        reminderMessage = commandLine.Substring(commandLine.IndexOf(" to ") + 1);
+                                    }
+                                    else
+                                    {
+                                        reminderMessage = commandLine.Substring(commandLine.IndexOf(" that ") + 1);
+                                    }
+
+                                    if (reminderMessage.Contains("\n"))
+                                    {
+                                        reminderMessage = reminderMessage.Substring(0, reminderMessage.IndexOf("\n"));
+                                    }
+                                    else if (reminderMessage.Contains("."))
+                                    {
+                                        reminderMessage = reminderMessage.Substring(0, reminderMessage.IndexOf("."));
+                                    }
+
+                                    //got it bye
+                                    break;
+                                }
+                            }
                         }
 
                         //two hours cause we in SA bebe
@@ -107,7 +151,8 @@ namespace Tyrell.Business
                             AuthorUserName = reminderPost.AuthorUserName,
                             ReminderRequestedOn = actualDate,
                             RemindUserOn = GetDateToRemind(fullMessage, actualDate),
-                            AddedToTyrell = DateTime.Now
+                            AddedToTyrell = DateTime.Now,
+                            ReminderMessage = reminderMessage
                         };
 
                         var _index = _elasticSearchReminders.Index(reminderObj);
@@ -155,7 +200,8 @@ namespace Tyrell.Business
         //comment on threads for reminders
         public static async Task PostRemindMeMessage(Reminder reminder)
         {
-            await PostToThread(reminder.TopicId, $"Hey @{reminder.AuthorUserName} you asked me to remind you of this on {reminder.ReminderRequestedOn.ToString("f")}.");
+            var message = string.IsNullOrWhiteSpace(reminder.ReminderMessage) ? "of this" : "_" + reminder.ReminderMessage + "_";
+            await PostToThread(reminder.TopicId, $"Hey @{reminder.AuthorUserName} you asked me to remind you {message} on {reminder.ReminderRequestedOn.ToString("f")}.");
         }
 
         //check and do all the other functions
@@ -185,7 +231,7 @@ namespace Tyrell.Business
                 {
                     try
                     {
-                        var fullMessage = possibleFunctionPost.PostRaw.Trim().ToLower();
+                        var fullMessage = RemoveQuotedText(possibleFunctionPost.PostRaw.Trim().ToLower());
 
                         //ignore flag: tyrellignore
                         if (!string.IsNullOrWhiteSpace(fullMessage) && fullMessage.Contains(Constants.BotIgnoreFlag))
@@ -349,6 +395,12 @@ namespace Tyrell.Business
                 var carryInfo = 0;
                 foreach (var command in commands)
                 {
+                    //break if we are in the end of the commands
+                    if (command == "that" || command == "to")
+                    {
+                        break;
+                    }
+
                     //skip the 'in' and 'at' words, or somehow the bot name
                     if (command == "in" || command == "at" || command == Constants.BotName)
                     {
@@ -430,6 +482,12 @@ namespace Tyrell.Business
                     }
                    
                     //check for range
+                    if (command == "minute" || command == "minutes")
+                    {
+                        dateForReminder = dateForReminder.AddMinutes(carryInfo);
+                        continue;
+                    }
+
                     if (command == "hour" || command == "hours")
                     {
                         dateForReminder = dateForReminder.AddHours(carryInfo);
@@ -548,7 +606,9 @@ namespace Tyrell.Business
                     if (carryInfo == 0)
                     {
                         int.TryParse(command, out carryInfo);
-                        continue;
+                        if (carryInfo != 0){
+                            continue;                            
+                        }
                     }
 
                     //if we end up here, who knows how we got here. Kill it
@@ -558,6 +618,16 @@ namespace Tyrell.Business
             }
             
             return dateForReminder;
+        }
+
+        static string RemoveQuotedText (string inText)
+        {
+            while (inText.Contains("[quote") && inText.Contains("[/quote]"))
+            {
+                inText = inText.Remove(inText.IndexOf("[quote"), inText.IndexOf("[/quote]"));
+            }
+
+            return inText;
         }
     }
 }
