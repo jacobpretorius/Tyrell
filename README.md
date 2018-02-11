@@ -6,7 +6,7 @@
 Pretty much a plug and play discourse bot. You need ElasticSearch (I'm using 6.1.2), Discourse forum site URL, username, and password. My instance of the bot is called @Tyrell, 
 feel free to rename where you need to. 
 
-Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and press 9 for automatic mode.
+Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and it will start in "automatic Mode"; turn on your CAPS LOCK key to exit auto mode (on WINDOWS, you need to remote the autostart in OSX as it is not suppored, Program.cs line 24).
 
 **PLEASE be respectful when using the full index commands. Just because you could index a full site doesn't mean you should**. It could
 get your account banned pretty easily.
@@ -68,8 +68,8 @@ remindme in 2 days at 9:30am to buy milk -> buy milk in 2 days at 9:30am.
 
 remindme in 4 hours that I like coffee -> you guessed it.
 
-You don’t need to @Tyrell the bot for remindme to work, it will get it from anywhere in a post.
-
+**You don’t need to @Tyrell the bot for remindme to work**, it will get it from anywhere in a post.
+**YOU MUST @TYRELL OR TYRELL the bot for the rest of the functions to work!.**
 ### tyrell slap
 
 >tyrell slap
@@ -81,6 +81,16 @@ Slaps a user, IRC style. Guess my childhood.
 >tyrell slap [username]
 
 you can @ the username if you want, it will add it if you don’t. Your post must call the bot with either @Tyrell or “tyrell”.
+
+### tyrell chat
+
+>tyrell chat
+
+Have a convo with the bot using the CleverBot API.
+
+**usage**:
+
+>tyrell chat [message about a bunch of stuff]
 
 ### tyrellignore
 
@@ -97,7 +107,6 @@ It runs every minute.
 
 ## KNOWN BUGS: 
 - there is an issue with multiple commands in the same post.
-- need to smooth out the pause automatic mode using CAPS handling.
 
 ## WISHLIST:
 - Better datetime parsing
