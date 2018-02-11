@@ -5,10 +5,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Elasticsearch.Net;
 using Nest;
 using Newtonsoft.Json;
 using Tyrell.Data;
 using Tyrell.DisplayConsole;
+using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace Tyrell.Business
 {
@@ -17,6 +19,8 @@ namespace Tyrell.Business
         static readonly ElasticClient _elasticSearch;
         static readonly ElasticClient _elasticSearchReminders;
         static DateTime _reminderLastRan;
+        static string _chatState;
+        private static bool _automaticModeActive = true;
 
         static Functions()
         {
@@ -36,12 +40,21 @@ namespace Tyrell.Business
         //the real meat of the bot
         public static async Task AutomaticMode()
         {
-            var go = true;
-            while (go)
+            if (Console.CapsLock)
+            {
+                _automaticModeActive = false;
+                Display.FlickerPrint("[AUTOMATIC MODE] STARTED STOPPED ON CAPS");
+            }
+            else
+            {
+                _automaticModeActive = true;
+            }
+
+            while (_automaticModeActive)
             {
                 //keep automatic mode going untill CAPS ON
                 if (Console.CapsLock){
-                    go = false;
+                    _automaticModeActive = false;
                     Display.FlickerPrint("[AUTOMATIC MODE] STOPPED ON CAPS");
                 }
 
@@ -63,7 +76,7 @@ namespace Tyrell.Business
 
                 Display.FlickerPrint("[AUTOMATIC MODE] ALL OK");
                 Console.Clear();
-                Display.WriteOnBottomLine($"[ESC] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {_reminderLastRan.ToString("t")}");
+                Display.WriteOnBottomLine($"[CAPS] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {_reminderLastRan.ToString("t")}");
                 Thread.Sleep(60000);
             };
         }
@@ -275,6 +288,11 @@ namespace Tyrell.Business
                                         await PostToThread(possibleFunctionPost.TopicId, $"_{possibleFunctionPost.AuthorUserName} pokes {target}._");
                                         await LikePost(possibleFunctionPost.Id);
                                         break;
+
+                                    case "chat":
+                                        var reply = await GetCleverbotChatReply(fullMessage.Substring(fullMessage.IndexOf("chat", StringComparison.InvariantCultureIgnoreCase) + 5));
+                                        await PostToThread(possibleFunctionPost.TopicId, $"@{possibleFunctionPost.AuthorUserName} {reply}");
+                                        break;
                                 }
                             }
                         }
@@ -378,8 +396,33 @@ namespace Tyrell.Business
             }
         }
 
+        //get a reply from Cleverbot
+        static async Task<string> GetCleverbotChatReply(string input)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new System.Uri("https://www.cleverbot.com/getreply?key=CC75aHYmUyP46RNlUGxb5Efo95w");
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage response = await client.GetAsync($"https://www.cleverbot.com/getreply?key={Constants.CleverBotApiKey}&input={input}&cs={_chatState}");
+                if (response.IsSuccessStatusCode)
+                {
+                    dynamic json = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync());
+                    if (json != null)
+                    {
+                        _chatState = json.cs;
+                        return json.output;
+                    }
+                }
+            }
+
+            //didnt work
+            return "Cleverbot doesn't want to talk now.";
+        }
+
         //this could do with some improvement
-        private static DateTime GetDateToRemind(string fullMessage, DateTime dateForReminder)
+        static DateTime GetDateToRemind(string fullMessage, DateTime dateForReminder)
         {
             var cleanStart = fullMessage.Substring(fullMessage.IndexOf("remindme", StringComparison.Ordinal) + 9);
             if (cleanStart.Length > 31)
@@ -620,6 +663,7 @@ namespace Tyrell.Business
             return dateForReminder;
         }
 
+        //handle quoted messages
         static string RemoveQuotedText (string inText)
         {
             while (inText.Contains("[quote") && inText.Contains("[/quote]"))

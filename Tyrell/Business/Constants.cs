@@ -32,5 +32,8 @@
         public static readonly string Username = "Tyrell";
 
         public static readonly string Password = "password";
+
+        //cleverbot
+        public static readonly string CleverBotApiKey = "";
     }
 }
