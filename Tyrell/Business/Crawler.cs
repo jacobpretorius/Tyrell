@@ -10,33 +10,33 @@ namespace Tyrell.Business
 {
     public static class Crawler
     {
-        private static readonly ElasticClient _elasticSearch;
-        private static readonly ElasticClient _elasticSearchThreads;
-        private static int _highestActualTopicId { get; set; }
-        private static int _highestActualPostId { get; set; }
-        private static int _highestKnownPostId { get; set; }
-        private static DateTime _lastExtraRangeScan { get; set; }
+        private static readonly ElasticClient ElasticSearch;
+        private static readonly ElasticClient ElasticSearchThreads;
+        private static int HighestActualTopicId { get; set; }
+        private static int HighestActualPostId { get; set; }
+        private static int HighestKnownPostId { get; set; }
+        private static DateTime LastExtraRangeScan { get; set; }
 
         static Crawler()
         {
-            _lastExtraRangeScan = DateTime.Now.ToLocalTime().AddDays(-1);
+            LastExtraRangeScan = DateTime.Now.ToLocalTime().AddDays(-1);
 
             var settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticPostIndex);
 
-            _elasticSearch = new ElasticClient(settings);
+            ElasticSearch = new ElasticClient(settings);
 
             settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticThreadIndex);
 
-            _elasticSearchThreads = new ElasticClient(settings);
+            ElasticSearchThreads = new ElasticClient(settings);
         }
         
         //lets literally read every post on the site we know of
         public static async Task ReadAllForumPosts()
         {
             //get the highest indexed post ID
-            var esResponse = _elasticSearch.Search<ForumPost>(
+            var esResponse = ElasticSearch.Search<ForumPost>(
                 s => s
                     .Aggregations(a => a
                         .Max("max_id", m => m
@@ -72,7 +72,7 @@ namespace Tyrell.Business
         public static async Task ReadAllThreads()
         {
             //get the highest indexed post ID
-            var esResponse = _elasticSearchThreads.Search<ForumThread>(
+            var esResponse = ElasticSearchThreads.Search<ForumThread>(
                 s => s
                     .Aggregations(a => a
                         .Max("max_id", m => m
@@ -162,7 +162,7 @@ namespace Tyrell.Business
                             CreatedAt = json.created_at
                         };
 
-                        var _index = _elasticSearch.Index(forumPost);
+                        var _index = ElasticSearch.Index(forumPost);
 
                         Display.ReadPostUpdate(ref forumPost);
                     }
@@ -216,7 +216,7 @@ namespace Tyrell.Business
                             CreatedAt = json.created_at
                         };
 
-                        var _index = _elasticSearchThreads.Index(forumThread);
+                        var _index = ElasticSearchThreads.Index(forumThread);
 
                         Display.ReadThreadUpdate(ref forumThread);
                     }
@@ -235,10 +235,10 @@ namespace Tyrell.Business
         public static async Task ReadLatestForumPostsSmart(int rescanRange = 5)
         {
             // if it's 1AM, do a 1k posts rescan for completeness
-            if (DateTime.Now.Hour == 1 && _lastExtraRangeScan.Date < DateTime.Today)
+            if (DateTime.Now.Hour == 1 && LastExtraRangeScan.Date < DateTime.Today)
             {
                 rescanRange = 1000;
-                _lastExtraRangeScan = DateTime.Now.ToLocalTime();
+                LastExtraRangeScan = DateTime.Now.ToLocalTime();
             }
 
             //get the latest threads, index them, and set highest ACTUAL thread ID
@@ -250,10 +250,10 @@ namespace Tyrell.Business
             SetHighestKnownPostId();
 
             //add our default rescan range and let it run
-            if (_highestActualPostId > _highestKnownPostId)
+            if (HighestActualPostId > HighestKnownPostId)
             {
-                var lowerLimit = _highestKnownPostId - rescanRange;
-                var startRange = _highestActualPostId + 1;
+                var lowerLimit = HighestKnownPostId - rescanRange;
+                var startRange = HighestActualPostId + 1;
                 while (startRange-- >= lowerLimit)
                 {
                     try
@@ -312,12 +312,12 @@ namespace Tyrell.Business
                                 };
 
                                 //index them while we have them
-                                var _index = _elasticSearchThreads.Index(forumThread);
+                                var _index = ElasticSearchThreads.Index(forumThread);
 
                                 Display.ReadThreadUpdate(ref forumThread);
                             }
 
-                            _highestActualTopicId = (int)json.topic_list.topics[0].id;
+                            HighestActualTopicId = (int)json.topic_list.topics[0].id;
                         }
                     }
                 }
@@ -338,7 +338,7 @@ namespace Tyrell.Business
                 client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
                 client.DefaultRequestHeaders.Add("cookie", Session.Cookie);
 
-                HttpResponseMessage response = await client.GetAsync($"{Constants.ForumBaseUrl}/t/{_highestActualTopicId}");
+                HttpResponseMessage response = await client.GetAsync($"{Constants.ForumBaseUrl}/t/{HighestActualTopicId}");
                 if (response.IsSuccessStatusCode)
                 {
                     if (response?.RequestMessage?.RequestUri?.AbsolutePath == "/login")
@@ -361,7 +361,7 @@ namespace Tyrell.Business
                                 }
                             }
 
-                            _highestActualPostId = last;
+                            HighestActualPostId = last;
                         }
                     }
                 }
@@ -369,7 +369,7 @@ namespace Tyrell.Business
                 {
                     Console.Clear();
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Display.WriteOnBottomLine($"COULD NOT READ LATEST THREAD [{_highestActualTopicId}]");
+                    Display.WriteOnBottomLine($"COULD NOT READ LATEST THREAD [{HighestActualTopicId}]");
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
                 }
             }
@@ -378,7 +378,7 @@ namespace Tyrell.Business
         //used to set the highest known (indexed) forum post variable
         private static void SetHighestKnownPostId()
         {
-            var esResponse = _elasticSearch.Search<ForumPost>(
+            var esResponse = ElasticSearch.Search<ForumPost>(
                 s => s
                     .Aggregations(a => a
                         .Max("max_id", m => m
@@ -390,7 +390,7 @@ namespace Tyrell.Business
             var value = esResponse?.Aggs?.Max("max_id")?.Value;
             if (value != null)
             {
-                _highestKnownPostId = (int) value;
+                HighestKnownPostId = (int) value;
             }
         }
     }

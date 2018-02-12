@@ -16,25 +16,27 @@ namespace Tyrell.Business
 {
     public static class Functions
     {
-        static readonly ElasticClient _elasticSearch;
-        static readonly ElasticClient _elasticSearchReminders;
-        static DateTime _reminderLastRan;
-        static string _chatState;
-        private static bool _automaticModeActive = true;
+        private static readonly ElasticClient ElasticSearch;
+        private static readonly ElasticClient ElasticSearchReminders;
+        private static DateTime ReminderLastRan;
+        private static DateTime AllFunctionsLastRan;
+        private static string CleverbotChatState;
+        private static bool AutomaticModeActive = true;
 
         static Functions()
         {
-            _reminderLastRan = DateTime.Now;
+            ReminderLastRan = DateTime.Now.AddMinutes(-1);
+            AllFunctionsLastRan = DateTime.Now.AddMinutes(-1);
 
             var settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticPostIndex);
 
-            _elasticSearch = new ElasticClient(settings);
+            ElasticSearch = new ElasticClient(settings);
 
             settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticRemindersIndex);
 
-            _elasticSearchReminders = new ElasticClient(settings);
+            ElasticSearchReminders = new ElasticClient(settings);
         }
 
         //the real meat of the bot
@@ -42,27 +44,22 @@ namespace Tyrell.Business
         {
             if (Console.CapsLock)
             {
-                _automaticModeActive = false;
+                AutomaticModeActive = false;
                 Display.FlickerPrint("[AUTOMATIC MODE] STARTED STOPPED ON CAPS");
             }
             else
             {
-                _automaticModeActive = true;
+                AutomaticModeActive = true;
             }
 
-            while (_automaticModeActive)
+            while (AutomaticModeActive)
             {
                 //keep automatic mode going untill CAPS ON
                 if (Console.CapsLock){
-                    _automaticModeActive = false;
+                    AutomaticModeActive = false;
                     Display.FlickerPrint("[AUTOMATIC MODE] STOPPED ON CAPS");
                 }
-
-                //used to offset the time that we index for when we check for reminders
-                var exactStart = DateTime.Now;
-
                 Display.FlickerPrint("[AUTOMATIC MODE] STARTING");
-
                 await Crawler.ReadLatestForumPostsSmart();
 
                 Display.FlickerPrint("[AUTOMATIC MODE] CHECKING FOR NEW REMINDERS");
@@ -72,11 +69,11 @@ namespace Tyrell.Business
                 await ProcessReminders();
 
                 Display.FlickerPrint("[AUTOMATIC MODE] DOING ALL OTHER FUNCTIONS");
-                await CheckForAllFunctions(exactStart);
+                await CheckForAllFunctions();
 
                 Display.FlickerPrint("[AUTOMATIC MODE] ALL OK");
                 Console.Clear();
-                Display.WriteOnBottomLine($"[CAPS] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {_reminderLastRan.ToString("t")}");
+                Display.WriteOnBottomLine($"[CAPS] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {ReminderLastRan.ToString("t")}");
                 Thread.Sleep(60000);
             };
         }
@@ -85,7 +82,7 @@ namespace Tyrell.Business
         //decided to keep this seperate from other functions for new user simplicity. Everyone knows remindme, not everyone wants to use advanced tyrell verb commands
         public static async Task CheckForRemindMePosts(int range = 1)
         {
-            var esResponse = _elasticSearch.Search<ForumPost>(s => s
+            var esResponse = ElasticSearch.Search<ForumPost>(s => s
                 .Query(q => q
                     .Bool(b => b
                         .Must(m => m
@@ -168,7 +165,7 @@ namespace Tyrell.Business
                             ReminderMessage = reminderMessage
                         };
 
-                        var _index = _elasticSearchReminders.Index(reminderObj);
+                        var _index = ElasticSearchReminders.Index(reminderObj);
 
                         await LikePost(reminderPost.Id);
                     }
@@ -185,13 +182,13 @@ namespace Tyrell.Business
         {
             var now = DateTime.Now;
 
-            var esResponse = _elasticSearchReminders.Search<Reminder>(s => s
+            var esResponse = ElasticSearchReminders.Search<Reminder>(s => s
                 .Query(q => q
                     .Bool(b => b
                         .Must(m => m
                             .DateRange(r => r
                                 .Field(fieldRange => fieldRange.RemindUserOn)
-                                .GreaterThanOrEquals(_reminderLastRan)
+                                .GreaterThanOrEquals(ReminderLastRan)
                                 .LessThanOrEquals(now)
                             )
                         )
@@ -207,7 +204,7 @@ namespace Tyrell.Business
                 }
             }
 
-            _reminderLastRan = now;
+            ReminderLastRan = now;
         }
 
         //comment on threads for reminders
@@ -218,9 +215,9 @@ namespace Tyrell.Business
         }
 
         //check and do all the other functions
-        public static async Task CheckForAllFunctions(DateTime exactStart)
+        public static async Task CheckForAllFunctions()
         {
-            var esResponse = _elasticSearch.Search<ForumPost>(s => s
+            var esResponse = ElasticSearch.Search<ForumPost>(s => s
                 .Query(q => q
                     .Bool(b => b
                         .Must(m => m
@@ -231,7 +228,7 @@ namespace Tyrell.Business
                                    && m
                                        .DateRange(r => r
                                            .Field(fieldRange => fieldRange.CreatedAt)
-                                           .GreaterThanOrEquals(exactStart.AddMinutes(-1))
+                                           .GreaterThanOrEquals(AllFunctionsLastRan)
                                        )
                         )
                     )
@@ -305,6 +302,8 @@ namespace Tyrell.Business
                     }
                 }
             }
+
+            AllFunctionsLastRan = DateTime.Now;
         }
 
         //comment manually goes here, or from our functions
@@ -405,13 +404,13 @@ namespace Tyrell.Business
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-                HttpResponseMessage response = await client.GetAsync($"https://www.cleverbot.com/getreply?key={Constants.CleverBotApiKey}&input={input}&cs={_chatState}");
+                HttpResponseMessage response = await client.GetAsync($"https://www.cleverbot.com/getreply?key={Constants.CleverBotApiKey}&input={input}&cs={CleverbotChatState}");
                 if (response.IsSuccessStatusCode)
                 {
                     dynamic json = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync());
                     if (json != null)
                     {
-                        _chatState = json.cs;
+                        CleverbotChatState = json.cs;
                         return json.output;
                     }
                 }

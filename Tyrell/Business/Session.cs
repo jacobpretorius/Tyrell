@@ -12,14 +12,14 @@ namespace Tyrell.Business
 {
     public static class Session
     {
-        private static readonly HttpClient _client = new HttpClient();
-        private static readonly string[] _csrfPath = { "csrf" };
+        private static readonly HttpClient Client = new HttpClient();
+        private static readonly string[] CsrfPath = { "csrf" };
+        
+        private static string Token = "";
+        private static DateTime TokenValidTo;
 
-        private static string _cookie = "";
-        private static string _token = "";
-        private static DateTime _tokenValidTo;
-
-        public static string Cookie => _cookie;
+        private static string cookie = "";
+        public static string Cookie => cookie;
 
         //logs in with username and password, setting the cookie in the process
         public static async Task Login()
@@ -36,7 +36,7 @@ namespace Tyrell.Business
                     var request = new HttpRequestMessage(HttpMethod.Post, uri);
                     request.Headers.Add("X-CSRF-Token", await GetCsrfToken());
                     request.Headers.Add("x-requested-with", "XMLHttpRequest");
-                    request.Headers.Add("cookie", _cookie);
+                    request.Headers.Add("cookie", cookie);
                     request.Method = HttpMethod.Post;
                     request.Content = new FormUrlEncodedContent(parameters);
 
@@ -49,7 +49,7 @@ namespace Tyrell.Business
                         var trimForumCookie = forumSessionCookie.Substring(0, forumSessionCookie.IndexOf("path=/") - 2);
 
                         //and set it
-                        _cookie = tCookie.Substring(0, tCookie.IndexOf(';') + 1) + " " + trimForumCookie;
+                        cookie = tCookie.Substring(0, tCookie.IndexOf(';') + 1) + " " + trimForumCookie;
                     }
                 }
             }
@@ -63,24 +63,24 @@ namespace Tyrell.Business
         //get the csrf token, also generates a new one if current one is expired
         public static async Task<string> GetCsrfToken()
         {
-            if (DateTime.Now >= _tokenValidTo)
+            if (DateTime.Now >= TokenValidTo)
             {
                 //get the token (valid for ~15 mins)
                 var csrfSource = new Uri($"{Constants.ForumBaseUrl}/session/csrf.json");
-                var csrfResult = await _client.GetAsync(csrfSource);
-                var csrfToken = (string)await Deserialize(csrfResult, _csrfPath);
+                var csrfResult = await Client.GetAsync(csrfSource);
+                var csrfToken = (string)await Deserialize(csrfResult, CsrfPath);
 
                 //and get a new cookie if not set
-                if (string.IsNullOrWhiteSpace(_cookie))
+                if (string.IsNullOrWhiteSpace(cookie))
                 {
-                    _cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
+                    cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
                 }
 
-                _tokenValidTo = DateTime.Now.AddMinutes(5);
-                _token = csrfToken;
+                TokenValidTo = DateTime.Now.AddMinutes(5);
+                Token = csrfToken;
             }
 
-            return _token;
+            return Token;
         }
 
         //get the csrf token from the response by github magic.
