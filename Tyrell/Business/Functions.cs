@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Elasticsearch.Net;
 using Nest;
 using Newtonsoft.Json;
 using Tyrell.Data;
@@ -25,8 +24,8 @@ namespace Tyrell.Business
 
         static Functions()
         {
-            ReminderLastRan = DateTime.Now.AddMinutes(-1);
-            AllFunctionsLastRan = DateTime.Now.AddMinutes(-1);
+            ReminderLastRan = DateTime.Now.ToLocalTime().AddMinutes(-1);
+            AllFunctionsLastRan = DateTime.Now.ToLocalTime().AddMinutes(-1);
 
             var settings = new ConnectionSettings(new Uri(Constants.ElasticUrl))
                 .DefaultIndex(Constants.ElasticPostIndex);
