@@ -110,5 +110,13 @@ namespace Tyrell.DisplayConsole
             Console.CursorTop = Console.WindowTop + Console.WindowHeight - 1;
             Console.WriteLine(text);
         }
+
+        public static void WriteErrorBottomLine(string text)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.CursorTop = Console.WindowTop + Console.WindowHeight - 1;
+            Console.WriteLine($"[ERROR] {DateTime.Now.ToString("T")}: {text}");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+        }
     }
 }

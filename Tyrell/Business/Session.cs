@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Tyrell.DisplayConsole;
 
 namespace Tyrell.Business
 {
@@ -53,31 +54,39 @@ namespace Tyrell.Business
                     }
                 }
             }
-            catch (Exception w)
+            catch
             {
-                Console.WriteLine(w);
-                Thread.Sleep(2000);
+                Display.WriteErrorBottomLine("Cookie");
+                await ConnectionFailure();
             }
         }
 
         //get the csrf token, also generates a new one if current one is expired
         public static async Task<string> GetCsrfToken()
         {
-            if (DateTime.Now >= TokenValidTo)
+            try
             {
-                //get the token (valid for ~15 mins)
-                var csrfSource = new Uri($"{Constants.ForumBaseUrl}/session/csrf.json");
-                var csrfResult = await Client.GetAsync(csrfSource);
-                var csrfToken = (string)await Deserialize(csrfResult, CsrfPath);
-
-                //and get a new cookie if not set
-                if (string.IsNullOrWhiteSpace(cookie))
+                if (DateTime.Now >= TokenValidTo)
                 {
-                    cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
-                }
+                    //get the token (valid for ~15 mins)
+                    var csrfSource = new Uri($"{Constants.ForumBaseUrl}/session/csrf.json");
+                    var csrfResult = await Client.GetAsync(csrfSource);
+                    var csrfToken = (string)await Deserialize(csrfResult, CsrfPath);
 
-                TokenValidTo = DateTime.Now.AddMinutes(5);
-                Token = csrfToken;
+                    //and get a new cookie if not set
+                    if (string.IsNullOrWhiteSpace(cookie))
+                    {
+                        cookie = csrfResult.Headers.FirstOrDefault(w => w.Key == "Set-Cookie").Value.FirstOrDefault();
+                    }
+
+                    TokenValidTo = DateTime.Now.AddMinutes(5);
+                    Token = csrfToken;
+                }
+            }
+            catch
+            {
+                Display.WriteErrorBottomLine("Get CsrfToken");
+                await ConnectionFailure();
             }
 
             return Token;
@@ -115,15 +124,36 @@ namespace Tyrell.Business
 
                     return JToken.ReadFrom(reader);
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine(ex);
-                    Thread.Sleep(2000);
+                    Display.WriteErrorBottomLine("Deserialize CsrfToken");
+                    await ConnectionFailure();
                 }
             }
 
             //something went wrong
             return null;
+        }
+
+        private static async Task ConnectionFailure()
+        {
+            //resets
+            Token = "";
+            cookie = "";
+            TokenValidTo = DateTime.Now.AddDays(-1);
+
+            while (string.IsNullOrWhiteSpace(Token) && string.IsNullOrWhiteSpace(cookie))
+            {
+                Thread.Sleep(2500);
+
+                try
+                {
+                    await Login();
+                    Thread.Sleep(500);
+                    await GetCsrfToken();
+                }
+                catch {}
+            }
         }
     }
 }
