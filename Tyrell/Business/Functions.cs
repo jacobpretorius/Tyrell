@@ -339,7 +339,7 @@ namespace Tyrell.Business
                     if (response.IsSuccessStatusCode)
                     {
                         //jay
-                        Display.FlickerPrint("MESSAGE POSTED");
+                        Display.WriteOnBottomLine("MESSAGE POSTED");
                     }
                 }
             }

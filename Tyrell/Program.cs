@@ -9,7 +9,17 @@ namespace Tyrell
     {
         private static void Main()
         {
-            Runner().Wait();
+            while (true)
+            {
+                try
+                {
+                    Runner().Wait();
+                }
+                catch (Exception e)
+                {
+                    Display.WriteErrorBottomLine(e.ToString());
+                }
+            }
         }
 
         private static async Task Runner()
