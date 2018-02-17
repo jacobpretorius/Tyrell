@@ -216,6 +216,8 @@ namespace Tyrell.Business
         //check and do all the other functions
         public static async Task CheckForAllFunctions()
         {
+            var now = DateTime.Now;
+
             var esResponse = ElasticSearch.Search<ForumPost>(s => s
                 .Query(q => q
                     .Bool(b => b
@@ -286,7 +288,13 @@ namespace Tyrell.Business
                                         break;
 
                                     case "chat":
-                                        var reply = await GetCleverbotChatReply(fullMessage.Substring(fullMessage.IndexOf("chat", StringComparison.InvariantCultureIgnoreCase) + 5));
+                                        var reply = "";
+                                        var quit = 0;
+                                        while (string.IsNullOrWhiteSpace(reply) && quit++ < 4)
+                                        {
+                                            reply = await GetCleverbotChatReply(fullMessage.Substring(fullMessage.IndexOf("chat", StringComparison.InvariantCultureIgnoreCase) + 5));
+                                            Thread.Sleep(100);
+                                        }
                                         await PostToThread(possibleFunctionPost.TopicId, $"@{possibleFunctionPost.AuthorUserName} {reply}");
                                         break;
                                 }
@@ -302,7 +310,7 @@ namespace Tyrell.Business
                 }
             }
 
-            AllFunctionsLastRan = DateTime.Now;
+            AllFunctionsLastRan = now;
         }
 
         //comment manually goes here, or from our functions
