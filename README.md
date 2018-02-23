@@ -1,6 +1,8 @@
 # Tyrell
 .NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities.
 
+[![Build status](https://ci.appveyor.com/api/projects/status/tpr73mwmhe5328wn?svg=true)](https://ci.appveyor.com/project/warejacob/tyrell)
+
 ## SETUP:
 
 Pretty much a plug and play discourse bot. You need ElasticSearch (I'm using 6.1.2), Discourse forum site URL, username, and password. My instance of the bot is called @Tyrell, 
