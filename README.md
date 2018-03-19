@@ -1,16 +1,17 @@
 # Tyrell
-.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities, now with basic Sentiment Analysis using VADER (Valence Aware Dictionary and sEntiment Reasoner).
+.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Has full forum posts and thread indexing capabilities, now with basic Sentiment Analysis using VADER (Valence Aware Dictionary and sEntiment Reasoner).
 
 [![Build status](https://ci.appveyor.com/api/projects/status/tpr73mwmhe5328wn?svg=true)](https://ci.appveyor.com/project/warejacob/tyrell)
 
 ## SETUP:
 
-Pretty much a plug and play discourse bot. You need ElasticSearch (I'm using 6.2.1), Discourse forum site URL, username, and password. My instance of the bot is called @Tyrell, 
-feel free to rename where you need to. 
+A plug and play discourse bot. My instance of the bot is called @Tyrell, feel free to rename where you need to. 
 
-Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and it will start in "automatic Mode"; turn on your CAPS LOCK key to exit auto mode (on WINDOWS, you need to remote the autostart in OSX as it is not suppored, Program.cs line 24).
+You need ElasticSearch (I'm using v 6.2.1), a Discourse forum site URL, and a registered username/password. 
 
-###v1.1 Unmanned Mode
+Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and it will start in manned mode by default; turn on your CAPS LOCK key to exit auto mode (on WINDOWS, you need to remote the autostart in OSX as it is not suppored, Program.cs line 24, as detecting CAPS is not supported on all net core platforms).
+
+### v1.1 Unmanned Mode
 You can optionally run the bot in unmanned mode where it is near uncrashable (useful for running on remote servers). Look in Program.cs and swith the commented/uncommented runners around.
 
 **PLEASE be respectful when using the full index commands. Just because you could index a full site doesn't mean you should**. It could
