@@ -1,14 +1,17 @@
 # Tyrell
-.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities.
+.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities, now with basic Sentiment Analysis thanks to a VADER C# port (https://github.com/codingupastorm/vadersharp).
 
 [![Build status](https://ci.appveyor.com/api/projects/status/tpr73mwmhe5328wn?svg=true)](https://ci.appveyor.com/project/warejacob/tyrell)
 
 ## SETUP:
 
-Pretty much a plug and play discourse bot. You need ElasticSearch (I'm using 6.1.2), Discourse forum site URL, username, and password. My instance of the bot is called @Tyrell, 
+Pretty much a plug and play discourse bot. You need ElasticSearch (I'm using 6.2.1), Discourse forum site URL, username, and password. My instance of the bot is called @Tyrell, 
 feel free to rename where you need to. 
 
 Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and it will start in "automatic Mode"; turn on your CAPS LOCK key to exit auto mode (on WINDOWS, you need to remote the autostart in OSX as it is not suppored, Program.cs line 24).
+
+###v1.1 Unmanned Mode
+You can optionally run the bot in unmanned mode where it is near uncrashable (useful for running on remote servers). Look in Program.cs and swith the commented/uncommented runners around.
 
 **PLEASE be respectful when using the full index commands. Just because you could index a full site doesn't mean you should**. It could
 get your account banned pretty easily.
@@ -109,6 +112,7 @@ It runs every minute.
 
 ## KNOWN BUGS: 
 - there is an issue with multiple commands in the same post.
+- sometimes for no reason Cleverbot doesn't reply.
 
 ## WISHLIST:
 - Better datetime parsing
