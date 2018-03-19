@@ -121,5 +121,5 @@ It runs every minute.
 ## GET CREATIVE:
 Kibana (and/or many other) data visulisation tools are great fun once you have a dataset indexed of forum posts and threads.
 
-##WITH THANKS
+## WITH THANKS
 VADER port VaderSharp -> https://github.com/codingupastorm/vadersharp
