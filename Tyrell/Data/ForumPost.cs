@@ -17,6 +17,8 @@ namespace Tyrell.Data
         public int ReplyCount { get; set; }
         public int Reads { get; set; }
         public int TrustLevel { get; set; }
+
+        public double? Sentiment { get; set; }
         
         public DateTime UpdatedAt { get; set; }
         public DateTime CreatedAt { get; set; }

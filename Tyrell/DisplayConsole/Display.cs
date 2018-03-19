@@ -14,7 +14,7 @@ namespace Tyrell.DisplayConsole
             WriteOnBottomLine("[KEY]\tOPTION");
             WriteOnBottomLine("");
             WriteOnBottomLine("[1]\tRELOG");
-            WriteOnBottomLine("[2]\tCRAWL LATEST THREADS AND POSTS SMART");
+            WriteOnBottomLine("[2]\tPROCESS ALL SENTIMENT");
             WriteOnBottomLine("[3]\tCRAWL LATEST THREADS AND X POSTS");
             WriteOnBottomLine("[4]\tCRAWL FROM X TO X POSTS");
             WriteOnBottomLine("[5]\tCRAWL ALL POSTS");
@@ -98,7 +98,7 @@ namespace Tyrell.DisplayConsole
                 }
 
                 Console.Clear();
-                WriteOnBottomLine("##### TYRELL V0.5 #####");
+                WriteOnBottomLine("##### TYRELL V1.1 #####");
                 WriteOnBottomLine("");
                 WriteOnBottomLine(outtext);
                 Thread.Sleep(300);

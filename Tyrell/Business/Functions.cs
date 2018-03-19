@@ -9,6 +9,7 @@ using Nest;
 using Newtonsoft.Json;
 using Tyrell.Data;
 using Tyrell.DisplayConsole;
+using VaderSharp;
 using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace Tyrell.Business
@@ -17,6 +18,7 @@ namespace Tyrell.Business
     {
         private static readonly ElasticClient ElasticSearch;
         private static readonly ElasticClient ElasticSearchReminders;
+        private static readonly SentimentIntensityAnalyzer SentimentAnalyzer = new SentimentIntensityAnalyzer();
         private static DateTime ReminderLastRan;
         private static DateTime AllFunctionsLastRan;
         private static string CleverbotChatState;
@@ -54,7 +56,8 @@ namespace Tyrell.Business
             while (AutomaticModeActive)
             {
                 //keep automatic mode going untill CAPS ON
-                if (Console.CapsLock){
+                if (Console.CapsLock)
+                {
                     AutomaticModeActive = false;
                     Display.FlickerPrint("[AUTOMATIC MODE] STOPPED ON CAPS");
                 }
@@ -75,6 +78,35 @@ namespace Tyrell.Business
                 Display.WriteOnBottomLine($"[CAPS] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {ReminderLastRan.ToString("t")}");
                 Thread.Sleep(60000);
             };
+        }
+
+        public static async Task AutomaticModeUnmanned()
+        {
+            while (true)
+            {
+                try
+                {
+                    Display.FlickerPrint("[AUTOMATIC MODE] STARTING");
+                    await Crawler.ReadLatestForumPostsSmart();
+
+                    Display.FlickerPrint("[AUTOMATIC MODE] CHECKING FOR NEW REMINDERS");
+                    await CheckForRemindMePosts();
+
+                    Display.FlickerPrint("[AUTOMATIC MODE] PROCESSING REMINDME MESSAGES");
+                    await ProcessReminders();
+
+                    Display.FlickerPrint("[AUTOMATIC MODE] DOING ALL OTHER FUNCTIONS");
+                    await CheckForAllFunctions();
+
+                    Display.FlickerPrint("[AUTOMATIC MODE] ALL OK");
+                    Console.Clear();
+                    Display.WriteOnBottomLine($"[CAPS] [AUTOMATIC MODE] [{DateTime.Now.ToString("G")}] SLEEPING | LAST REMINDERS : {ReminderLastRan.ToString("t")}");
+                    Thread.Sleep(60000);
+                }
+                catch
+                {
+                }
+            }
         }
 
         //check the posts index for remindme messages and add them to the remindme index for processing later
@@ -157,6 +189,7 @@ namespace Tyrell.Business
                             Id = reminderPost.TopicId + "-" + reminderPost.AuthorID + "-" + actualDate,
                             TopicId = reminderPost.TopicId,
                             AuthorID = reminderPost.AuthorID,
+                            PostId = reminderPost.PostNumber,
                             AuthorUserName = reminderPost.AuthorUserName,
                             ReminderRequestedOn = actualDate,
                             RemindUserOn = GetDateToRemind(fullMessage, actualDate),
@@ -210,7 +243,8 @@ namespace Tyrell.Business
         public static async Task PostRemindMeMessage(Reminder reminder)
         {
             var message = string.IsNullOrWhiteSpace(reminder.ReminderMessage) ? "of this" : "_" + reminder.ReminderMessage + "_";
-            await PostToThread(reminder.TopicId, $"Hey @{reminder.AuthorUserName} you asked me to remind you {message} on {reminder.ReminderRequestedOn.ToString("f")}.");
+            
+            await PostToThread(reminder.TopicId, $"Hey @{reminder.AuthorUserName} you asked me to remind you {message}");            
         }
 
         //check and do all the other functions
@@ -399,6 +433,40 @@ namespace Tyrell.Business
             {
                 Console.WriteLine(w);
                 Thread.Sleep(2000);
+            }
+        }
+
+        //go through all the posts we have in ES and calculate their sentiments
+        public static async Task ProcessAllSentiment()
+        {
+            for (int i = GetHighestKnownPostID(); i > 0; i--)
+            {
+                try
+                {
+                    var searchResponse = await ElasticSearch.SearchAsync<ForumPost>(s => s
+                        .AllIndices()
+                        .AllTypes()
+                        .Query(q => q
+                            .Match(m => m
+                                .Field(f => f.Id)
+                                .Query(i.ToString())
+                            )
+                        )
+                    );
+
+                    if (searchResponse != null && searchResponse?.Documents?.FirstOrDefault() != null)
+                    {
+                        var post = searchResponse?.Documents?.FirstOrDefault();
+                        post.Sentiment = SentimentAnalyzer.PolarityScores(post?.PostRaw)?.Compound;
+
+                        ElasticSearch.Index(post);
+                        Display.WriteOnBottomLine($"{i} : {post.Sentiment}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Display.WriteOnBottomLine($"{i} : ERROR");
+                }
             }
         }
 
@@ -678,6 +746,27 @@ namespace Tyrell.Business
             }
 
             return inText;
+        }
+
+        //get the highest known postID from ES
+        static int GetHighestKnownPostID()
+        {
+            var esResponse = ElasticSearch.Search<ForumPost>(
+                s => s
+                    .Aggregations(a => a
+                        .Max("max_id", m => m
+                            .Field(p => p.Id)
+                        )
+                    )
+            );
+
+            var value = esResponse?.Aggs?.Max("max_id")?.Value;
+            if (value != null)
+            {
+                return (int)value;
+            }
+
+            return 0;
         }
     }
 }

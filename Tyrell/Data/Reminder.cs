@@ -7,6 +7,7 @@ namespace Tyrell.Data
         public string Id { get; set; }
         public int TopicId { get; set; }
         public int AuthorID { get; set; }
+        public int PostId { get; set; }
         public string AuthorUserName { get; set; }
         public string ReminderMessage { get; set; }
         public DateTime ReminderRequestedOn { get; set; }

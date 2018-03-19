@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Tyrell.Business;
 using Tyrell.DisplayConsole;
@@ -13,12 +14,35 @@ namespace Tyrell
             {
                 try
                 {
+                    //RUNS IN UNMANNED MODE, NO OPTIONS IT JUST GOES
+                    //UnmannedRunner().Wait();
+
+                    //RUNS IN SEMI MANNED MODE, GIVES YOU SOME OPTIONS AND BREAKS TO THE MENU
                     Runner().Wait();
                 }
                 catch (Exception e)
                 {
                     Display.WriteErrorBottomLine(e.ToString());
                 }
+            }
+        }
+
+        private static async Task UnmannedRunner()
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.Clear();
+
+            Display.FlickerPrint("STARTING UNMANNED MODE");
+            
+            try
+            {
+                await Login();
+
+                await Functions.AutomaticModeUnmanned();
+            }
+            catch
+            {
+                Thread.Sleep(10000);
             }
         }
 
@@ -30,8 +54,6 @@ namespace Tyrell
             Display.FlickerPrint("STARTING");
 
             await Login();
-
-            await Functions.AutomaticMode();
 
             ConsoleKeyInfo keyDown;
             do
@@ -47,8 +69,8 @@ namespace Tyrell
                         break;
 
                     case "2":
-                        Display.FlickerPrint("READING LATEST FORUM POSTS");
-                        await Crawler.ReadLatestForumPostsSmart();
+                        Display.FlickerPrint("BACK PROCESSING SENTIMENT");
+                        await Functions.ProcessAllSentiment();
                         break;
 
                     case "3":

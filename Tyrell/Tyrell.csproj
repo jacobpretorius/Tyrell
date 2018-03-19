@@ -10,9 +10,11 @@
     <PackageLicenseUrl>https://github.com/warejacob/Tyrell</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/warejacob/Tyrell</RepositoryUrl>
     <PackageReleaseNotes>https://github.com/warejacob/Tyrell</PackageReleaseNotes>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CodingUpAStorm.VaderSharp" Version="1.0.4" />
     <PackageReference Include="NEST" Version="5.6.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nest;
 using Tyrell.Data;
 using Tyrell.DisplayConsole;
+using VaderSharp;
 
 namespace Tyrell.Business
 {
@@ -12,6 +13,7 @@ namespace Tyrell.Business
     {
         private static readonly ElasticClient ElasticSearch;
         private static readonly ElasticClient ElasticSearchThreads;
+        private static readonly SentimentIntensityAnalyzer SentimentAnalyzer = new SentimentIntensityAnalyzer();
         private static int HighestActualTopicId { get; set; }
         private static int HighestActualPostId { get; set; }
         private static int HighestKnownPostId { get; set; }
@@ -159,7 +161,8 @@ namespace Tyrell.Business
                             Reads = (int)json?.reads,
                             TrustLevel = (int)json?.trust_level,
                             UpdatedAt = json.updated_at,
-                            CreatedAt = json.created_at
+                            CreatedAt = json.created_at,
+                            Sentiment = SentimentAnalyzer.PolarityScores((string)json?.raw)?.Compound
                         };
 
                         var _index = ElasticSearch.Index(forumPost);
