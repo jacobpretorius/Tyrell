@@ -1,5 +1,5 @@
 # Tyrell
-.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities, now with basic Sentiment Analysis thanks to a VADER C# port (https://github.com/codingupastorm/vadersharp).
+.NET Core 2.0 bot for Discourse API using ElasticSearch and NEST. Full forum post and thread indexing capabilities, now with basic Sentiment Analysis using VADER (Valence Aware Dictionary and sEntiment Reasoner).
 
 [![Build status](https://ci.appveyor.com/api/projects/status/tpr73mwmhe5328wn?svg=true)](https://ci.appveyor.com/project/warejacob/tyrell)
 
@@ -119,3 +119,6 @@ It runs every minute.
 
 ## GET CREATIVE:
 Kibana (and/or many other) data visulisation tools are great fun once you have a dataset indexed of forum posts and threads.
+
+##WITH THANKS
+VADER port VaderSharp -> https://github.com/codingupastorm/vadersharp
