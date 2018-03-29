@@ -12,7 +12,7 @@ You need ElasticSearch (I'm using v 6.2.1), a Discourse forum site URL, and a re
 Edit the /Business/Constants.cs file with your relevant details. Spin up the bot and it will start in manned mode by default; turn on your CAPS LOCK key to exit auto mode (on WINDOWS, you need to remote the autostart in OSX as it is not suppored, Program.cs line 24, as detecting CAPS is not supported on all net core platforms).
 
 ### v1.1 Unmanned Mode
-You can optionally run the bot in unmanned mode where it is near uncrashable (useful for running on remote servers). Look in Program.cs and swith the commented/uncommented runners around.
+You can optionally run the bot in unmanned mode where it is near uncrashable (useful for running on remote servers). Look in Program.cs and switch the commented/uncommented task runners around.
 
 **PLEASE be respectful when using the full index commands. Just because you could index a full site doesn't mean you should**. It could
 get your account banned pretty easily.
