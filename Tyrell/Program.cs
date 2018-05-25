@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
 using Tyrell.Business;
 using Tyrell.DisplayConsole;
+using Tyrell.Server;
 
 namespace Tyrell
 {
@@ -14,17 +17,32 @@ namespace Tyrell
             {
                 try
                 {
+                    //start the webhost for uptime
+                    Task.Run(StartWebHost);
+
                     //RUNS IN UNMANNED MODE, NO OPTIONS IT JUST GOES
-                    //UnmannedRunner().Wait();
+                    UnmannedRunner().Wait();
 
                     //RUNS IN SEMI MANNED MODE, GIVES YOU SOME OPTIONS AND BREAKS TO THE MENU
-                    Runner().Wait();
+                    //Runner().Wait();
                 }
                 catch (Exception e)
                 {
                     Display.WriteErrorBottomLine(e.ToString());
                 }
             }
+        }
+
+        private static async Task StartWebHost()
+        {
+            var webhost = new WebHostBuilder()
+                .UseKestrel(options =>
+                {
+                    options.Listen(IPAddress.Any, 1982);
+                })
+                .UseStartup<ServerMain>()
+                .Build();
+            await webhost.RunAsync();
         }
 
         private static async Task UnmannedRunner()

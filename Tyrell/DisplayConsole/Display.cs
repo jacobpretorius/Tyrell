@@ -98,7 +98,7 @@ namespace Tyrell.DisplayConsole
                 }
 
                 Console.Clear();
-                WriteOnBottomLine("##### TYRELL V1.1 #####");
+                WriteOnBottomLine("##### TYRELL V1.2 #####");
                 WriteOnBottomLine("");
                 WriteOnBottomLine(outtext);
                 Thread.Sleep(300);
